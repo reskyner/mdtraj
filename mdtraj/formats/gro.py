@@ -327,11 +327,15 @@ class GroTrajectoryFile(object):
                     old_resname = thisresname
                     if thisresname in pdb.PDBTrajectoryFile._residueNameReplacements:
                         thisresname = pdb.PDBTrajectoryFile._residueNameReplacements[thisresname]
+
+                    # for unordered residues
                     if not f'{thisresname}_{chain}_{thisresnum}' in residues.keys():
                         residue = topology.add_residue(thisresname, chain, resSeq=thisresnum)
                         residue[f'{thisresname}_{chain}_{thisresnum}'] = residue
                     else:
                         residue = residue[f'{thisresname}_{chain}_{thisresnum}']
+
+                        
                     if thisresname in pdb.PDBTrajectoryFile._atomNameReplacements:
                         atomReplacements = pdb.PDBTrajectoryFile._atomNameReplacements[thisresname]
                     else:
