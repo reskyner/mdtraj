@@ -293,6 +293,7 @@ class GroTrajectoryFile(object):
 
         return coordinates[::stride], time, unitcell_vectors[::stride]
 
+
     def _read_topology(self):
         if not self._open:
             raise ValueError('I/O operation on closed file')
@@ -305,6 +306,9 @@ class GroTrajectoryFile(object):
         chain = topology.add_chain()
         residue = None
         atomReplacements = {}
+
+        # name: resobj
+        residues = {}
 
         # This is needed because sometimes
         # residue names get replaced and this
@@ -323,7 +327,11 @@ class GroTrajectoryFile(object):
                     old_resname = thisresname
                     if thisresname in pdb.PDBTrajectoryFile._residueNameReplacements:
                         thisresname = pdb.PDBTrajectoryFile._residueNameReplacements[thisresname]
-                    residue = topology.add_residue(thisresname, chain, resSeq=thisresnum)
+                    if not f'{thisresname}_{chain}_{thisresnum}' in residues.keys():
+                        residue = topology.add_residue(thisresname, chain, resSeq=thisresnum)
+                        residue[f'{thisresname}_{chain}_{thisresnum}'] = residue
+                    else:
+                        residue = residue[f'{thisresname}_{chain}_{thisresnum}']
                     if thisresname in pdb.PDBTrajectoryFile._atomNameReplacements:
                         atomReplacements = pdb.PDBTrajectoryFile._atomNameReplacements[thisresname]
                     else:
@@ -343,6 +351,57 @@ class GroTrajectoryFile(object):
                                   serial=thisatomnum)
         topology.create_standard_bonds()
         return n_atoms, topology
+
+    # def _read_topology(self):
+    #     if not self._open:
+    #         raise ValueError('I/O operation on closed file')
+    #     if not self._mode == 'r':
+    #         raise ValueError('file not opened for reading')
+    #     pdb.PDBTrajectoryFile._loadNameReplacementTables()
+
+    #     n_atoms = None
+    #     topology = md.Topology()
+    #     chain = topology.add_chain()
+    #     residue = None
+    #     atomReplacements = {}
+
+    #     # This is needed because sometimes
+    #     # residue names get replaced and this
+    #     # brings to wrong residue parsing
+    #     old_resname = None
+    #     for ln, line in enumerate(self._file):
+    #         if ln == 1:
+    #             n_atoms = int(line.strip())
+    #         elif ln > 1 and ln < n_atoms + 2:
+    #             (thisresnum, thisresname, thisatomname, thisatomnum) = \
+    #                 [line[i*5:i*5+5].strip() for i in range(4)]
+    #             thisresnum, thisatomnum = map(int, (thisresnum, thisatomnum))
+    #             if residue is None or residue.resSeq != thisresnum or old_resname != thisresname:
+    #                 if residue is not None and thisresnum == residue.resSeq:
+    #                     warnings.warn("WARNING: two consecutive residues with same number (%s, %s)" % (thisresname, old_resname))
+    #                 old_resname = thisresname
+    #                 if thisresname in pdb.PDBTrajectoryFile._residueNameReplacements:
+    #                     thisresname = pdb.PDBTrajectoryFile._residueNameReplacements[thisresname]
+    #                 residue = topology.add_residue(thisresname, chain, resSeq=thisresnum)
+    #                 if thisresname in pdb.PDBTrajectoryFile._atomNameReplacements:
+    #                     atomReplacements = pdb.PDBTrajectoryFile._atomNameReplacements[thisresname]
+    #                 else:
+    #                     atomReplacements = {}
+
+    #             thiselem = thisatomname
+    #             if len(thiselem) > 1:
+    #                 thiselem = thiselem[0] + sub('[A-Z0-9]','',thiselem[1:])
+    #             try:
+    #                 element = elem.get_by_symbol(thiselem)
+    #             except KeyError:
+    #                 element = elem.virtual
+    #             if thisatomname in atomReplacements:
+    #                 thisatomname = atomReplacements[thisatomname]
+
+    #             topology.add_atom(thisatomname, element=element, residue=residue,
+    #                               serial=thisatomnum)
+    #     topology.create_standard_bonds()
+    #     return n_atoms, topology
 
     def _read_frame(self):
         if not self._open:
